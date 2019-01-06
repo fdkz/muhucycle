@@ -55,6 +55,7 @@ void Renderer::render(World* world) {
 	}
 
 	_render_cross_object_springs(&world->jelloasms, &world->crossobjectsprings);
+	_render_particles(&world->ground);
 }
 
 void Renderer::_render_ground(Ground* ground) {
@@ -274,6 +275,39 @@ void Renderer::_render_ground(Ground* ground) {
 	}
 
 }
+
+
+void Renderer::_render_particles(Ground* ground) {
+
+	int num_particles = ground->dirt_particles.particles.size();
+	if (num_particles <= 0) return;
+
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	ImDrawIdx idx = (ImDrawIdx)dl->_VtxCurrentIdx;
+	dl->PrimReserve(3 * num_particles, 3 * num_particles); // int idx_count, int vtx_count
+	dl->_VtxCurrentIdx += 3 * num_particles;
+	ImVec2 uv(dl->_Data->TexUvWhitePixel); // us white pixel as our texture. this way we can simulate vector graphics with clean colors.
+
+	f32 radius = proj_height_world_to_pixel(0.02); // 2 cm // not exactly radius. but close enough for our particles.
+
+	for (int i = 0; i < num_particles; i++) {
+		DirtParticle* p = &ground->dirt_particles.particles[i];
+		u32 col = p->color;
+		ImVec2 coord = proj_vec_world_to_pixel(ImVec2(p->x, p->y));
+
+		dl->_VtxWritePtr[0].pos = ImVec2(coord.x       , coord.y+radius);   dl->_VtxWritePtr[0].uv = uv;   dl->_VtxWritePtr[0].col = col;
+		dl->_VtxWritePtr[1].pos = ImVec2(coord.x+radius, coord.y-radius);   dl->_VtxWritePtr[1].uv = uv;   dl->_VtxWritePtr[1].col = col;
+		dl->_VtxWritePtr[2].pos = ImVec2(coord.x-radius, coord.y-radius);   dl->_VtxWritePtr[2].uv = uv;   dl->_VtxWritePtr[2].col = col;
+		dl->_VtxWritePtr += 3;
+
+		dl->_IdxWritePtr[0] = idx;
+		dl->_IdxWritePtr[1] = (ImDrawIdx)(idx+1);
+		dl->_IdxWritePtr[2] = (ImDrawIdx)(idx+2);
+		dl->_IdxWritePtr += 3;
+		idx += 3;
+	}
+}
+
 
 void Renderer::_render_jello(JelloSingleObject* jello) {
 	Array<MassPoint>& mps = jello->masspoints;

@@ -51,6 +51,7 @@ struct Renderer {
 	void render(World* world);
 
 	void _render_ground(Ground* ground);
+	void _render_particles(Ground* ground);
 	void _render_jello(JelloSingleObject* jello);
 	void _render_cross_object_springs(Array<JelloAssembly>* jello_assemblys, Array<CrossObjectSpring>* springs);
 	void _draw_spring(f32 x1, f32 y1, f32 x2, f32 y2, u32 color, f32 line_width, u32 flags);

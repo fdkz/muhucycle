@@ -25,7 +25,8 @@ struct World {
 	MassPoint* player_center_mp;
 };
 
-void world_tick(World* out_world, float dt);
+void world_tick_physics(World* out_world, float dt);
+void world_tick_frame(World* out_world, float dt); // call this once per frame. world_tick_physics usually needs to be called more, but not this.
 void world_reset(World* out_world);
 void world_accelerate_bicycle(World* out_world, float force);
 

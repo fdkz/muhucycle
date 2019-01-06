@@ -6,6 +6,7 @@
 
 #include <stdlib.h> // malloc, free
 #include <stdint.h>
+#include <string.h> // memcpy
 
 typedef uint8_t  u8;
 typedef uint16_t u16;

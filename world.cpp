@@ -12,8 +12,25 @@ inline float dist(float x1, float y1, float x2, float y2) {
 }
 
 
-// TODO: move masspoint to line normal, not just to current terrain height. also add a friction parameter.
+// // TODO: move masspoint to line normal, not just to current terrain height. also add a friction parameter.
+// void collide_jello_with_ground(JelloSingleObject* out_jello, Ground* ground) {
+// 	for (int i = 0; i < out_jello->masspoints.size(); i++) {
+// 		MassPoint& mp = out_jello->masspoints[i];
+// 		if (mp.flags & MASSPOINT_NO_COLLISION) continue;
+
+// 		float y = ground->get_ground_height(mp.x);
+// 		// just move the masspoint back onto the ground if it's below the ground.
+// 		if (mp.y < y) {
+// 			mp.y = y;
+// 			mp.vy = 0.f;
+// 			mp.vx = 0.f;
+// 		}
+// 	}
+// }
+
+// collides masspoints with the ground AND generates dirt particles if needed.
 void collide_jello_with_ground(JelloSingleObject* out_jello, Ground* ground) {
+
 	for (int i = 0; i < out_jello->masspoints.size(); i++) {
 		MassPoint& mp = out_jello->masspoints[i];
 		if (mp.flags & MASSPOINT_NO_COLLISION) continue;
@@ -22,6 +39,35 @@ void collide_jello_with_ground(JelloSingleObject* out_jello, Ground* ground) {
 		// just move the masspoint back onto the ground if it's below the ground.
 		if (mp.y < y) {
 			mp.y = y;
+
+			f32 vsquare = mp.vx * mp.vx + mp.vy * mp.vy;
+
+			//if (vsquare > 1.8*1.8f) {
+			if (vsquare > 0.8*0.8f) {
+			//if (mp.vx * mp.vx + mp.vy * mp.vy > 0.01*0.01) {
+				// if speed was more than 0.2 m/s
+				if (ground->dirt_particles.particles.size() < 2000) { // limit to 500 particles
+					f32 v = sqrtf(vsquare);
+					f32 rnd;
+
+					// generate 5 slightly randomized particles per event.
+					for (int k = 0; k < 10; k++) {
+						f32 rnd1 = ((f32)rand() / (f32)(RAND_MAX) * 2.f - 1.f); // -1..+1
+						f32 rnd2 = ((f32)rand() / (f32)(RAND_MAX) * 2.f - 1.f); // -1..+1
+						f32 rnd3 = ((f32)rand() / (f32)(RAND_MAX)); // 0..+1
+
+						f32 dvx = rnd1 * v * 0.2;
+						f32 dvy = rnd2 * v * 0.2;
+
+						u32 col = IM_COL32(30+rnd3*20, 20, 10, 255 - (rnd3)*190);
+						col = IM_COL32((rnd3*.5+.5)*105, (rnd3*.5+.5)*80, (rnd3*.5+.5)*65, 255);
+						ground->dirt_particles.append(mp.x, mp.y, mp.vx + dvx, -mp.vy + dvy, 0.01, col);
+
+						ground->raise_top_ground(mp.x, -0.0001);
+					}
+				}
+			}
+
 			mp.vy = 0.f;
 			mp.vx = 0.f;
 		}
@@ -37,13 +83,39 @@ void collide_jello_with_ground(JelloAssembly* out_jello_assembly, Ground* ground
 World::World() { world_reset(this); }
 World::~World() { }
 
-void world_tick(World* out_world, float dt) {
+void world_tick_physics(World* out_world, float dt) {
+	out_world->ground.dirt_particles.set_acceleration(0, out_world->gravity);
+
 	for (int i = 0; i < out_world->jelloasms.size(); i++) {
 		jello_tick_spring_forces(&out_world->jelloasms[i]);
 		jello_tick_crossobject_spring_forces(&out_world->jelloasms, &out_world->jelloasms[i].cross_object_springs);
 		jello_tick_positions(&out_world->jelloasms[i], 0, out_world->gravity, dt);
 
 		collide_jello_with_ground(&out_world->jelloasms[i], &out_world->ground);
+	}
+}
+
+void world_tick_frame(World* out_world, float dt) {
+	out_world->ground.dirt_particles.tick(dt);
+
+	// stop all particles that are below the ground
+
+	DirtParticleSystem* ps = &out_world->ground.dirt_particles;
+
+	for (int i = 0; i < ps->particles.size(); i++) {
+		DirtParticle* p = &ps->particles[i];
+
+		if (!(p->flags & DIRT_PARTICLE_FLAG_PARTICLE_STOPPED)) {
+			float y = out_world->ground.get_ground_height(p->x);
+			if (p->y < y) {
+				p->flags |= DIRT_PARTICLE_FLAG_PARTICLE_STOPPED;
+				p->y = y;
+				p->age = DIRT_PARTICLE_MAX_AGE;
+				// TODO: raise ground
+
+				out_world->ground.raise_top_ground(p->x, 0.0001);
+			}
+		}
 	}
 }
 

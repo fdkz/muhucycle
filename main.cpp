@@ -1,8 +1,11 @@
 // Elmo Trolla, 2018
 // License: pick one - UNLICENSE (www.unlicense.org) / MIT (opensource.org/licenses/MIT).
 
-#define APP_VERSION "0.1.20190104"
+#define APP_VERSION "0.1.20190105"
 
+//
+// 0.1.20190105
+//   * no mud. but semipassable sand. episode subtitle: "a day on the beach".
 //
 // 0.1.20190104
 //   * left side of the world is now presentable.
@@ -70,7 +73,7 @@ void draw() {
 	int num_iterations = 10;
 
 	for (int i = 0; i < num_iterations; i++) {
-		world_tick(&world, dt / num_iterations);
+		world_tick_physics(&world, dt / num_iterations);
 
 		if (ImGui::IsKeyDown( ImGui::GetKeyIndex(ImGuiKey_LeftArrow) )) {
 			world_accelerate_bicycle(&world, force);
@@ -80,6 +83,8 @@ void draw() {
 			keydown = true;
 		}
 	}
+
+	world_tick_frame(&world, dt);
 
 	// io.KeyMap[ImGuiKey_LeftArrow] = 37;
 	// io.KeyMap[ImGuiKey_RightArrow] = 39;
@@ -163,11 +168,12 @@ void draw() {
 	{
 		ImGui::SetNextWindowSize(ImVec2(270,100), ImGuiSetCond_FirstUseEver);
 		ImGui::Begin("dbg window", &show_main_window);
+
 		ImGui::Text("movement: left/right arrows");
 		ImGui::Text("version : " APP_VERSION);
 		ImGui::Separator();
 
-		if (ImGui::Button("Reset World")) world_reset(&world);
+		if (ImGui::Button("Reset World?")) world_reset(&world);
 		ImGui::SliderFloat("gravity", &world.gravity, 0.0f, -20.0f);
 		ImGui::Text("cam %.3f %.3f", renderer.camera_x, renderer.camera_y);
 
@@ -217,6 +223,7 @@ void draw() {
 		#ifndef IMGUI_DISABLE_DEMO_WINDOWS
 		ImGui::Checkbox("show imgui demo window", &show_demo_window);
 		#endif
+		ImGui::Text("particles: %i", world.ground.dirt_particles.particles.size());
 
 		ImGui::End();
 	}
