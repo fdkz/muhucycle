@@ -18,6 +18,8 @@
 
 //
 // TODO:
+//   * fix blurriness on safari. on another note - maybe even add hidpi support?
+//   * add on-screen move buttons for mobile phones. but have to find out how to disable page scrolling.
 //   * mud. implement mud.
 //   * upgrade ground collision test. no sliding, no non-infinite friction at the moment.
 //
